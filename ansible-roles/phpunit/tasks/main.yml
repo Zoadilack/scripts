@@ -1,0 +1,15 @@
+---
+- stat: path=/usr/local/bin/phpunit
+  register: phpunit
+
+- name: download phpunit binary
+  command: wget https://phar.phpunit.de/phpunit.phar
+  when: phpunit.stat.exists == False
+
+- name: fix permissions on phpunit
+  command: chmod +x phpunit.phar
+  when: phpunit.stat.exists == False
+
+- name: move phpunit to local bin
+  command: mv phpunit.phar /usr/local/bin/phpunit
+  when: phpunit.stat.exists == False
