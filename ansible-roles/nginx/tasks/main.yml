@@ -1,0 +1,60 @@
+---
+# application tasks to be customized and to run after the main provision
+
+- name: add nginx.list repository file
+  file: path=/etc/apt/sources.list.d/nginx.list state=touch owner=vagrant group=vagrant mode=0555
+
+- lineinfile: dest=/etc/apt/sources.list.d/nginx.list line="deb http://nginx.org/packages/mainline/ubuntu/ trusty nginx"
+- lineinfile: dest=/etc/apt/sources.list.d/nginx.list line="deb-src http://nginx.org/packages/mainline/ubuntu/ trusty nginx"
+
+- name: add nginx signing key
+  shell: wget -q -O- http://nginx.org/keys/nginx_signing.key | sudo apt-key add -
+
+- name: Update apt
+  sudo: yes
+  apt: update_cache=yes
+
+- name: install nginx + packages
+  sudo: yes
+  apt: pkg={{ item }} state=latest
+  with_items:
+    - nginx
+
+- name: create sites-available
+  file: path=/etc/nginx/sites-available state=directory
+
+- name: create sites-enabled
+  file: path=/etc/nginx/sites-enabled state=directory
+
+- name: copy api config
+  copy: src=api.conf dest=/etc/nginx/sites-available/api.conf owner=www-data group=www-data mode=0644
+
+- name: copy app config
+  copy: src=app.conf dest=/etc/nginx/sites-available/app.conf owner=www-data group=www-data mode=0644
+
+- name: copy docs config
+  copy: src=app.conf dest=/etc/nginx/sites-available/docs.conf owner=www-data group=www-data mode=0644
+
+- name: enable api vhost
+  file:
+    src: /etc/nginx/sites-available/api.conf
+    dest: /etc/nginx/sites-enabled/api.conf
+    state: link
+
+- name: enable app vhost
+  file:
+    src: /etc/nginx/sites-available/app.conf
+    dest: /etc/nginx/sites-enabled/app.conf
+    state: link
+
+- name: enable docs vhost
+  file:
+    src: /etc/nginx/sites-available/docs.conf
+    dest: /etc/nginx/sites-enabled/docs.conf
+    state: link
+
+- name: mimic apache config loaders for nginx
+  lineinfile: dest="/etc/nginx/nginx.conf" regexp="^include /etc/nginx/conf.d/*.conf; " insertbefore="include /etc/nginx/conf.d/*.conf;" line="include /etc/nginx/sites-enabled/*;"
+
+- name: update fpm port
+  lineinfile: state=present dest="/etc/php/7.0/fpm/pool.d/www.conf" regexp="^listen = /run/php/php7.0-fpm.sock" line="listen = 127.0.0.1:9000"
