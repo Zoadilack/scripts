@@ -188,8 +188,8 @@ else
 fi
 
 # Install Vagrant plugins
-vagrant plugin install ansible
-vagrant plugin install landrush
+sudo vagrant plugin install ansible
+sudo vagrant plugin install landrush
 
 # Install some packages for Homebrew
 brew install colordiff 
