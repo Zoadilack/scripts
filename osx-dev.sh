@@ -139,14 +139,12 @@ else
   sudo mv wp-cli.phar /usr/local/bin/wp
 fi
 
-PHP_VERSION=$(php -r \@phpinfo\(\)\; | grep 'PHP Version' -m 1);
-if [${PHP_VERSION} -lt 7 ]; then
-  curl -s http://php-osx.liip.ch/install.sh | bash -s 7.0
-  echo "export PATH=/usr/local/php5/bin:$PATH" > ~/.bash_profile
-  echo "export PATH=/usr/local/php5/bin:$PATH" > ~/.profile
-  source ~/.bash_profile
-  source ~/.profile
-fi  
+# Install PHP7
+brew tap homebrew/dupes
+brew tap homebrew/versions
+brew tap homebrew/homebrew-php
+brew unlink php56
+brew install php70
 
 VIRTUALBOX_VERSION=$(vboxmanage --version | cut -b1);
 if [ ${VIRTUALBOX_VERSION} -ne 5 ]; then
@@ -181,7 +179,7 @@ fi
 # Install AWS CLI
 if type aws &> /dev/null; then
   echo "You never cease to amaze! AWS CLI is installed; let's check for an update!"
-  pip install --upgrade awscli
+  sudo pip install --upgrade awscli
 else
   echo "Installing AWS CLI"
   sudo pip install awscli --ignore-installed six
