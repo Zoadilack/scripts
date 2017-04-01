@@ -84,7 +84,6 @@ else
   echo "Successfully installed Git"
 fi
 
-
 if type ansible &> /dev/null; then
   echo "Skipping Ansible"
 else
@@ -92,7 +91,6 @@ else
   brew install ansible
   echo "Successfully installed Ansible"
 fi
-
 
 if type vagrant &> /dev/null; then
   echo "Skipping Vagrant"
@@ -109,7 +107,6 @@ else
   brew cask install virtualbox
   echo "Successfully installed VirtualBox"
 fi
-
 
 if type drush &> /dev/null; then
   echo "Skipping Drush"
@@ -189,15 +186,22 @@ fi
 sudo vagrant plugin install ansible
 sudo vagrant plugin install landrush
 
+if type node &> /dev/null; then
+  echo "Node not found... let's install it"
+  brew install node
+else
+  echo "Upgrading Node"
+  brew upgrade node
+fi
+
+# Install YARN, gulp, and gulp-cli
+npm install -g yarn gulp gulp-cli
+
 # Install some packages for Homebrew
 brew install colordiff 
 brew install tig 
 brew install macvim
 brew install gnupg
-
-# Install some Ruby gems
-sudo gem install sass
-sudo gem install compass
 
 # Update all composer dependencies/libraries.
 echo "Updating Composer stuff!"
