@@ -1,13 +1,12 @@
 #!/bin/sh
 #
-# Setup for a fresh developer workstation.
+# Installs the default Zoadilack development environment:
 #
-#  git clone git@bitbucket.org:zoadilack/zoadilack-scripts.git
-#  bash zoadilack-scripts/osx-dev.sh
+#  git clone git@github.com:zoadilack/scripts.git && cd scripts && bash osx-dev.sh
 #
 
 INSTALL_DIR=/usr/local
-REPO_DIR=${INSTALL_DIR}/zoadilack
+REPO_DIR=${INSTALL_DIR}/zoadilack-scripts
 DESIRED_ROLES_PATH=${REPO_DIR}/ansible-roles
 
 if [ -w ${INSTALL_DIR} ]; then
@@ -17,41 +16,21 @@ else
   sudo chown $(whoami):admin ${INSTALL_DIR}
 fi
 
-
 if xcode-select -p &> /dev/null; then
     echo "Developer Tools located"
 else
-    echo "Developer Tools not installed; let's do that now" 
-    echo "Please click 'Install' on the popup and follow the prompts"
     xcode-select --install
-    echo "Successfully installed Develper Tools"
 fi
 
 if /usr/bin/xcrun clang 2>&1 | grep license &> /dev/null; then
-    echo "We are automatically accepting the XCode License for you.."
     sudo xcodebuild -license accept
-    echo "License agreement registered"
 else
     echo "Developer Tools license ok"
 fi
 
-if type pip &> /dev/null; then
-  echo "You've got pip..."
-else
-  sudo easy_install pip
-fi
-
-if type python &> /dev/null; then
-  echo "Python found"
-else
-  brew install python
-fi
-
 if type composer &> /dev/null; then
-  echo "Composer found, let's see if we need to update.."
   composer self-update
 else
-  echo "Installing composer"
   curl -sS https://getcomposer.org/installer | php
   sudo mv composer.phar /usr/local/bin/composer
 fi
@@ -59,67 +38,35 @@ fi
 if type brew &> /dev/null; then
   echo "Awesome! Homebrew is installed already!"
 else
-  echo "Homebrew is not installed; let's do that now"
-  echo "Installing Homebrew"
   /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-  echo "Successfully installed Homebrew"
+  brew uninstall --force brew-cask; brew update
 fi
 
+brew update
 
-if brew tap | grep caskroom &> /dev/null; then
-  echo "Skipping Brew Cask"
-else
-  echo "Brew Cask is not installed; let's do that now"
-  echo "Installing Brew Cask "
-  brew tap caskroom/cask
-  echo "Successfully installed Brew Cask"
-fi
-
-
-if type git &> /dev/null; then
-  echo "Skipping git"
-else
-  echo "Installing Git "
-  brew install git
-  echo "Successfully installed Git"
-fi
-
-if type ansible &> /dev/null; then
-  echo "Skipping Ansible"
-else
-  echo "Installing Ansible "
-  brew install ansible
-  echo "Successfully installed Ansible"
-fi
+brew ls --versions python && brew upgrade python || brew install python
+brew ls --versions git && brew upgrade git || brew install git
+brew ls --versions ansible && brew upgrade ansible || brew install ansible
 
 if type vagrant &> /dev/null; then
-  echo "Skipping Vagrant"
+  echo "Exquisite! Vagrant is installed already!"
 else
-  echo "Installing Vagrant"
   brew cask install vagrant
-  echo "Successfully installed Vagrant"
 fi
 
+vboxmanage list runningvms | sed -r 's/.*\{(.*)\}/\1/' | xargs -L1 -I {} VBoxManage controlvm {} savestate
+
 if type virtualbox &> /dev/null; then
-  echo "Skipping Virtualbox"
+  echo "Astounding! VirtualBox is installed already!"
 else
-  echo "Installing VirtualBox"
-  brew cask install virtualbox
-  echo "Successfully installed VirtualBox"
+  brew install Caskroom/cask/virtualbox-extension-pack
 fi
 
 if type drush &> /dev/null; then
-  echo "Skipping Drush"
+  echo "Shame on me for doubting you. Drush is installed!"
 else
-  echo "Installing Drush"
-  # Download latest stable release using the code below or browse to github.com/drush-ops/drush/releases.
   php -r "readfile('http://files.drush.org/drush.phar');" > drush
-  # Or use our upcoming release: php -r "readfile('http://files.drush.org/drush-unstable.phar');" > drush
-
-  # Test your install.
   php drush core-status
-
-  # Make `drush` executable as a command from anywhere. Destination can be anywhere on $PATH.
   chmod +x drush
   sudo mv drush /usr/local/bin
 
@@ -128,7 +75,6 @@ else
 fi
 
 if type wp &> /dev/null; then
-  echo "wp-cli found, checking for updates"
   wp --allow-root cli update
 else
   curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
@@ -136,22 +82,11 @@ else
   sudo mv wp-cli.phar /usr/local/bin/wp
 fi
 
-# Install PHP7
-brew tap homebrew/dupes
-brew tap homebrew/versions
-brew tap homebrew/homebrew-php
-brew unlink php56
-brew install php70
-
 VIRTUALBOX_VERSION=$(vboxmanage --version | cut -b1);
 if [ ${VIRTUALBOX_VERSION} -ne 5 ]; then
-    echo
-    echo "ERROR: Your VirtualBox is too old; please upgrade to version 5"
-    echo
-    echo "you may be able to do this by running:"
-    echo "    brew cask install virtualbox"
-    echo
-    exit 1;
+  brew uninstall Caskroom/cask/virtualbox-extension-packinstall && brew install Caskroom/cask/virtualbox-extension-pack
+else
+  brew install Caskroom/cask/virtualbox-extension-pack
 fi
 
 if [ -f ~/.ansible.cfg ]; then
@@ -173,36 +108,52 @@ END_TEXT
   echo "Ansible configuration file created"
 fi
 
+if type pip &> /dev/null; then
+  pip install --upgrade pip
+else
+  sudo easy_install pip
+fi
+
 # Install AWS CLI
 if type aws &> /dev/null; then
-  echo "You never cease to amaze! AWS CLI is installed; let's check for an update!"
   sudo pip install --upgrade awscli
 else
-  echo "Installing AWS CLI"
   sudo pip install awscli --ignore-installed six
 fi
 
 # Install Vagrant plugins
 sudo vagrant plugin install ansible
-sudo vagrant plugin install landrush
-
-if type node &> /dev/null; then
-  echo "Node not found... let's install it"
-  brew install node
-else
-  echo "Upgrading Node"
-  brew upgrade node
-fi
-
-# Install YARN, gulp, and gulp-cli
-npm install -g yarn gulp gulp-cli
+sudo vagrant plugin install vagrant-vbguest
+sudo vagrant plugin install vagrant-docker-compose 
+sudo vagrant plugin install vagrant-hostsupdater
 
 # Install some packages for Homebrew
-brew install colordiff 
-brew install tig 
-brew install macvim
-brew install gnupg
+brew ls --versions php56 && brew unlink php56
+brew ls --versions php71 && brew upgrade php71 || brew install php71
+brew ls --versions docker && brew upgrade docker || brew install docker
+brew ls --versions docker-clean && brew upgrade docker-clean || brew install docker-clean
+brew ls --versions node && brew upgrade node || brew install node
+brew ls --versions colordiff && brew upgrade colordiff || brew install colordiff
+brew ls --versions tig && brew upgrade tig || brew install tig
+brew ls --versions macvim && brew upgrade macvim || brew install macvim
+brew ls --versions gnupg && brew upgrade gnupg || brew install gnupg
+brew ls --versions zsh && brew upgrade zsh || brew install zsh
+brew ls --versions zsh-completions && brew upgrade zsh-completions || brew install zsh-completions
+brew ls --versions homebrew/php/php71-xdebug && brew upgrade homebrew/php/php71-xdebug || brew install homebrew/php/php71-xdebug
+
+# Install some Node packages
+npm install -g aglio grunt-cli
+
+# Install some Ruby gems
+sudo gem install sass
+sudo gem install compass
 
 # Update all composer dependencies/libraries.
-echo "Updating Composer stuff!"
 composer global update
+
+# Update Terminal Syntax Highlighting
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+
+echo "Done"
+
+brew doctor
